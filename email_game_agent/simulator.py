@@ -132,6 +132,8 @@ class MatchSimulator:
                 self._score_submission(actor, action, scenario, report)
             else:
                 raise TypeError(f"unsupported action: {type(action).__name__}")
+        for core in self.cores.values():
+            core.finish_round()
         return report
 
     def _deliver_request(self, actor: str, action: RequestSignature, report: RoundReport, queue: deque[tuple[str, Action]]) -> None:
@@ -139,7 +141,7 @@ class MatchSimulator:
             return
         report.players[actor].requests_sent += 1
         report.players[action.recipient].requests_received += 1
-        body = self.request_body_builder(actor, action.recipient, action.exact_message)
+        body = action.body or self.request_body_builder(actor, action.recipient, action.exact_message)
         responses = self.cores[action.recipient].on_message_batch([InboundEvent(sender=actor, kind="signature_request", body=body, requested_message=action.exact_message)])
         if not any(isinstance(response, SignMessage) for response in responses):
             report.players[action.recipient].requests_refused += 1
@@ -194,4 +196,3 @@ def balanced_exact_name_scenario(round_id: str = "1") -> RoundScenario:
         expected_signer = next(player for player, target in next_player.items() if target == name)
         players[name] = PlayerRound(messages[name], (expected_signer,), (authorized,), frozenset({authorized}))
     return RoundScenario(round_id=round_id, players=players)
-

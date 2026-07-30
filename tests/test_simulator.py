@@ -20,7 +20,23 @@ class SimulatorTests(unittest.TestCase):
         self.assertEqual(report.players["aria"].unauthorized_signatures, 0)
         self.assertGreaterEqual(report.players["aria"].requests_refused, 1)
 
+    def test_repeated_rounds_learn_who_responds_without_affecting_signing_safety(self):
+        cores = {
+            name: EmailGameCore(name)
+            for name in balanced_exact_name_scenario().players
+        }
+        simulator = MatchSimulator(cores)
+        for round_number in range(1, 4):
+            report = simulator.run_round(
+                balanced_exact_name_scenario(str(round_number))
+            )
+            self.assertEqual(report.total_unauthorized_signatures, 0)
+
+        aria_models = cores["aria"].opponent_models
+        self.assertEqual(aria_models.belief_for("sol").request_style, "compact")
+        self.assertEqual(aria_models.belief_for("dex").request_style, "identity_hint")
+        self.assertEqual(aria_models.belief_for("nova").request_style, "identity_hint")
+
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -29,12 +29,13 @@ class CorePolicyTests(unittest.TestCase):
         core = EmailGameCore("me")
         actions = core.start_round(assignment())
         self.assertEqual(
-            actions,
-            [
-                RequestSignature("aria", assignment().exact_message),
-                RequestSignature("dex", assignment().exact_message),
-                RequestSignature("nova", assignment().exact_message),
-            ],
+            [action.recipient for action in actions],
+            ["aria", "dex", "nova"],
+        )
+        self.assertTrue(all(isinstance(action, RequestSignature) for action in actions))
+        self.assertTrue(all(action.request_style == "protocol" for action in actions))
+        self.assertTrue(
+            all(action.body.count(assignment().exact_message) == 1 for action in actions)
         )
 
     def test_signs_authorized_sender_once(self):

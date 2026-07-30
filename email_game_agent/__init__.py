@@ -9,6 +9,7 @@ from .models import (
     SignMessage,
     SubmitSignature,
 )
+from .opponents import OpponentBelief, OpponentModelBook
 from .resolver import HybridIdentityResolver, Resolution
 from .semantic import JsonSemanticScorer, build_identity_prompt
 from .simulator import MatchSimulator, RoundScenario
@@ -20,6 +21,8 @@ __all__ = [
     "InboundEvent",
     "JsonSemanticScorer",
     "MatchSimulator",
+    "OpponentBelief",
+    "OpponentModelBook",
     "RequestSignature",
     "Resolution",
     "RoundAssignment",

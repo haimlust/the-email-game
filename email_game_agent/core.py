@@ -15,6 +15,7 @@ from .models import (
     SignMessage,
     SubmitSignature,
 )
+from .opponents import OpponentModelBook
 from .resolver import HybridIdentityResolver, Resolution
 
 
@@ -25,10 +26,12 @@ class EmailGameCore:
         *,
         memory: AgentMemory | None = None,
         resolver: HybridIdentityResolver | None = None,
+        opponent_models: OpponentModelBook | None = None,
     ) -> None:
         self.agent_name = agent_name
         self.memory = memory or AgentMemory()
         self.resolver = resolver or HybridIdentityResolver()
+        self.opponent_models = opponent_models or OpponentModelBook()
         self.assignment: RoundAssignment | None = None
         self.authorized_senders: set[str] = set()
         self.unresolved_authorizations: dict[str, Resolution] = {}
@@ -38,18 +41,34 @@ class EmailGameCore:
     def start_round(self, assignment: RoundAssignment) -> list[Action]:
         if not assignment.exact_message:
             raise ValueError("the assigned message must not be empty")
+        # Finalize unanswered requests from the previous round before planning.
+        self.opponent_models.finish_round()
         self.assignment = assignment
         self._signed.clear()
         self._submitted.clear()
         self._resolve_authorizations()
 
-        # Listed collectors go first; then exploit the rule that any signature scores.
-        ordered = list(dict.fromkeys((*assignment.collect_from, *assignment.known_agents)))
-        return [
-            RequestSignature(recipient, assignment.exact_message)
-            for recipient in ordered
-            if recipient and recipient != self.agent_name
+        candidates = [
+            player
+            for player in assignment.known_agents
+            if player and player != self.agent_name
         ]
+        ordered = self.opponent_models.rank_players(candidates, assignment.collect_from)
+        actions: list[Action] = []
+        for recipient in ordered:
+            style, body = self.opponent_models.compose_request(
+                self.agent_name, recipient, assignment.exact_message
+            )
+            self.opponent_models.record_request(recipient)
+            actions.append(
+                RequestSignature(
+                    recipient,
+                    assignment.exact_message,
+                    body=body,
+                    request_style=style,
+                )
+            )
+        return actions
 
     def on_message_batch(self, events: Iterable[InboundEvent]) -> list[Action]:
         assignment = self._require_assignment()
@@ -91,8 +110,13 @@ class EmailGameCore:
                 key = (event.sender, self._payload_fingerprint(event.signature_payload))
                 if key not in self._submitted:
                     self._submitted.add(key)
+                    self.opponent_models.record_signature(event.sender)
                     actions.append(SubmitSignature(event.sender, event.signature_payload))
         return actions
+
+    def finish_round(self) -> None:
+        """Record unanswered requests as failures for future request planning."""
+        self.opponent_models.finish_round()
 
     @staticmethod
     def _payload_fingerprint(payload: object) -> str:

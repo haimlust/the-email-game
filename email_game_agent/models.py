@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, Union
 
+from .opponents import RequestStyle
+
 
 @dataclass(frozen=True)
 class RoundAssignment:
@@ -38,6 +40,8 @@ class InboundEvent:
 class RequestSignature:
     recipient: str
     exact_message: str
+    body: str = ""
+    request_style: RequestStyle = "protocol"
 
 
 @dataclass(frozen=True)
