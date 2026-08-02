@@ -20,6 +20,7 @@ become available.
 - [Identity resolution](#identity-resolution)
 - [Safety boundary](#safety-boundary)
 - [Quick start](#quick-start)
+- [Competition simulation notebook](#competition-simulation-notebook)
 - [Simulation and benchmarks](#simulation-and-benchmarks)
 - [Project structure](#project-structure)
 - [Competition-day integration](#competition-day-integration)
@@ -242,6 +243,21 @@ python simulate_match.py
 python benchmarks\run_resolver_benchmark.py
 ```
 
+## Competition simulation notebook
+
+competition_simulation.ipynb runs a six-round offline tournament using the
+actual strategy core. It includes explicit and fuzzy authorization rounds,
+adversarial identity claims, score charts, safety assertions, trusted-memory
+inspection, ToM-lite belief inspection, the lexical fallback benchmark, and a
+read-only starter-kit discovery cell.
+
+Launch it from the project directory:
+
+    jupyter notebook competition_simulation.ipynb
+
+The notebook never connects to the live board or reads credentials. Use the
+official command-line runner for scored competition games.
+
 ## Simulation and benchmarks
 
 ### Deterministic match simulator
@@ -319,6 +335,7 @@ the email game/
 |   |-- test_semantic.py
 |   `-- test_simulator.py
 |-- custom_agent_template.py
+|-- competition_simulation.ipynb
 |-- simulate_match.py
 `-- README.md
 ```
